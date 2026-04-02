@@ -24,6 +24,7 @@ export default function LoginPage() {
       setError(err.message || "Sign in failed");
       return;
     }
+    setMockRole(null); // FIXED: Purge any simulation overrides
     router.push("/");
     router.refresh();
   }

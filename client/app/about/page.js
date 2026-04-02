@@ -6,12 +6,11 @@ export default function AboutPage() {
       </h1>
       <div className="mt-8 space-y-4 text-neutral-600 leading-relaxed">
         <p>
-          Explorer is a blogging platform inspired by calm, readable publishing. We care
+          Explorer is a modern, premium blogging platform inspired by calm, readable publishing. We care
           about typography, generous whitespace, and stories that respect your attention.
         </p>
         <p>
-          This build is frontend-only: no database calls yet. The next steps will connect
-          auth, posts, and comments to Supabase.
+        Whether you are here to explore brilliant ideas or craft your next masterpiece, welcome to the future of digital writing.
         </p>
       </div>
     </div>

@@ -31,8 +31,10 @@ export default function CreatePostPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
-          body: content,
+          body: content, // keeping body to avoid breaking backend
+          content: content, // appending content for strict compliance
           image_url: imageUrl || null,
+          user: { id: user.id, role: user.role }
         }),
       });
       const data = await res.json().catch(() => ({}));
