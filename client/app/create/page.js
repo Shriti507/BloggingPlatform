@@ -65,20 +65,33 @@ export default function CreatePostPage() {
 
   if (!canWrite) {
     return (
-      <div className="mx-auto max-w-lg flex-1 px-4 py-20 text-center sm:px-6">
-        <h1 className="font-serif text-2xl font-semibold text-neutral-900">
-          Writing is for authors and admins
+      <div className="mx-auto flex max-w-lg flex-1 flex-col items-center justify-center px-4 py-20 text-center sm:px-6">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-amber-600 ring-8 ring-amber-50/50">
+          <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m11-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h1 className="mt-6 font-serif text-2xl font-semibold text-neutral-900">
+          Authors & Admins only
         </h1>
         <p className="mt-3 text-neutral-600">
-          Your account has the reader role. Ask a project admin to set your role to{" "}
-          <code className="rounded bg-neutral-100 px-1">author</code> in Supabase.
+          Your current role is <span className="font-bold text-neutral-900">{user?.role}</span>. 
+          To start writing stories, you need to be an author.
         </p>
-        <Link
-          href="/dashboard"
-          className="mt-8 inline-flex rounded-full bg-neutral-900 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800"
-        >
-          Back to profile
-        </Link>
+        <div className="mt-8 flex flex-col gap-3">
+          <Link
+            href="/membership"
+            className="rounded-full bg-neutral-900 px-8 py-3 text-sm font-medium text-white shadow-lg transition hover:bg-neutral-800 hover:shadow-xl"
+          >
+            Upgrade to Author
+          </Link>
+          <Link
+            href="/"
+            className="text-sm font-medium text-neutral-500 hover:text-neutral-900"
+          >
+            Go back to reader view
+          </Link>
+        </div>
       </div>
     );
   }

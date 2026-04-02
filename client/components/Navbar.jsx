@@ -124,6 +124,21 @@ export default function Navbar() {
                 </button>
                 {profileOpen && (
                   <div className="absolute right-0 mt-2 w-48 rounded-lg border border-neutral-200 bg-white py-1 shadow-lg">
+                    <div className="border-b border-neutral-100 px-4 py-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
+                        {/* Providing a fallback string ensures the UI never looks empty */}
+                        Role: {user?.role || 'Viewer'} 
+                      </p>
+                    </div>
+                    {user?.role === "admin" && (
+                      <Link
+                        href="/admin"
+                        className="block px-4 py-2 text-sm font-medium text-indigo-600 transition hover:bg-neutral-50"
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        Admin Dashboard
+                      </Link>
+                    )}
                     <Link
                       href="/dashboard"
                       className="block px-4 py-2 text-sm text-neutral-700 transition hover:bg-neutral-50"

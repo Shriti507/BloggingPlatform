@@ -22,6 +22,27 @@ export const metadata: Metadata = {
   description: "A calm place to read and write long-form stories.",
 };
 
+// export default function RootLayout({
+//   children,
+// }: Readonly<{
+//   children: React.ReactNode;
+// }>) {
+//   return (
+//     <html
+//       lang="en"
+//       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+//     >
+//       <body className="min-h-full flex flex-col bg-[var(--surface)] text-neutral-900">
+//         <AuthProvider>
+//           <Navbar />
+//           <main className="flex flex-1 flex-col">{children}</main>
+//         </AuthProvider>
+//       </body>
+//     </html>
+//   );
+// }
+
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,7 +53,11 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[var(--surface)] text-neutral-900">
+      {/* Add suppressHydrationWarning here to ignore browser extension injections */}
+      <body 
+        className="min-h-full flex flex-col bg-[var(--surface)] text-neutral-900"
+        suppressHydrationWarning
+      >
         <AuthProvider>
           <Navbar />
           <main className="flex flex-1 flex-col">{children}</main>

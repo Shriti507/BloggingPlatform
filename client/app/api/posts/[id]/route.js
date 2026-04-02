@@ -1,3 +1,4 @@
+import { canEditPost } from "@/lib/auth/roleChecks";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -30,9 +31,13 @@ export async function PATCH(request, { params }) {
       .eq("id", user.id)
       .maybeSingle();
 
-    const isOwner = existing.author_id === user.id;
-    const isAdmin = profile?.role === "admin";
-    if (!isOwner && !isAdmin) {
+    if (
+      !canEditPost({
+        role: profile?.role,
+        userId: user.id,
+        postAuthorId: existing.author_id,
+      })
+    ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -66,6 +71,58 @@ export async function PATCH(request, { params }) {
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { data: existing, error: fetchError } = await supabase
+      .from("posts")
+      .select("author_id")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (fetchError || !existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const isAuthor = user.id === existing.author_id;
+    const isAdmin = profile?.role === "admin";
+
+    if (!isAuthor && !isAdmin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { error: deleteError } = await supabase
+      .from("posts")
+      .delete()
+      .eq("id", id);
+
+    if (deleteError) {
+      return NextResponse.json({ error: deleteError.message }, { status: 400 });
     }
 
     return NextResponse.json({ ok: true });

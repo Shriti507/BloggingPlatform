@@ -1,4 +1,5 @@
 import CommentSection from "@/components/CommentSection";
+import { canEditPost, isAdminRole } from "@/lib/auth/roleChecks";
 import { createClient } from "@/lib/supabase/server";
 import { fetchCommentsForPost } from "@/services/commentService";
 import { fetchPostById } from "@/services/postService";
@@ -26,8 +27,12 @@ export default async function PostPage({ params }) {
       .select("role")
       .eq("id", user.id)
       .maybeSingle();
-    isAdmin = prof?.role === "admin";
-    canEdit = isAdmin || post.authorId === user.id;
+    isAdmin = isAdminRole(prof?.role);
+    canEdit = canEditPost({
+      role: prof?.role,
+      userId: user.id,
+      postAuthorId: post.authorId,
+    });
   }
 
   const { comments: initialComments, error: commentsError } =

@@ -2,9 +2,8 @@ import { isAdminRole } from "@/lib/auth/roleChecks";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
-export async function DELETE(_request, { params }) {
+export async function GET() {
   try {
-    const { id } = await params;
     const supabase = await createClient();
     const {
       data: { user },
@@ -25,13 +24,31 @@ export async function DELETE(_request, { params }) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { error: delError } = await supabase.from("comments").delete().eq("id", id);
+    // Get all posts for admin view
+    const { data: rows, error: fetchError } = await supabase
+      .from("posts")
+      .select(`
+        id,
+        title,
+        created_at,
+        updated_at,
+        author_id,
+        users (email)
+      `)
+      .order("updated_at", { ascending: false });
 
-    if (delError) {
-      return NextResponse.json({ error: delError.message }, { status: 400 });
+    if (fetchError) {
+      return NextResponse.json({ error: fetchError.message }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true });
+    const posts = (rows ?? []).map((r) => ({
+      id: r.id,
+      title: r.title,
+      author: r.users?.email || "Unknown",
+      updatedAt: new Date(r.updated_at || r.created_at).toLocaleDateString(),
+    }));
+
+    return NextResponse.json({ posts });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
