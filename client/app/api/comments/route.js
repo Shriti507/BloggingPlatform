@@ -40,15 +40,16 @@ export async function POST(request) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    const { data: row, error: insertError } = await supabase
-      .from("comments")
-      .insert({
-        post_id,
-        user_id: user.id,
-        body: text,
-      })
-      .select("id, body, created_at, user_id")
-      .single();
+    // ... existing auth checks ...
+const { data: row, error: insertError } = await supabase
+  .from("comments")
+  .insert({
+    post_id,
+    user_id: user.id,
+    body: text,
+  })
+  .select("id, body, created_at, user_id")
+  .single();
 
     if (insertError) {
       return NextResponse.json({ error: insertError.message }, { status: 400 });

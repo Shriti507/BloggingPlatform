@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/client";
+import { normalizeRole } from "@/lib/auth/roleChecks";
 
 /**
  * @param {import("@supabase/supabase-js").SupabaseClient} supabase
@@ -23,10 +23,7 @@ export async function fetchUserProfile(supabase, userId, userMetadata) {
     email,
     name:
       (typeof metaName === "string" && metaName.trim()) || nameFromEmail || "Member",
-    role:
-      data.role === "admin" || data.role === "author" || data.role === "viewer"
-        ? data.role
-        : "viewer",
+    role: normalizeRole(data.role),
   };
 
   return { profile, error: null };

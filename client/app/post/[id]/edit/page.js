@@ -1,7 +1,8 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthProvider";
+import { canEditPost } from "@/lib/auth/roleChecks";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -10,7 +11,7 @@ export default function EditPostPage() {
   const params = useParams();
   const id = params.id;
   const router = useRouter();
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const [title, setTitle] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -25,6 +26,11 @@ export default function EditPostPage() {
     if (authLoading) return;
     if (!user) {
       router.replace("/login");
+      return;
+    }
+    if (user.role === "viewer") {
+      setForbidden(true);
+      setLoadingPost(false);
       return;
     }
 
@@ -44,8 +50,12 @@ export default function EditPostPage() {
         return;
       }
 
-      const canEdit = isAdmin || row.author_id === user.id;
-      if (!canEdit) {
+      const allowed = canEditPost({
+        role: user.role,
+        userId: user.id,
+        postAuthorId: row.author_id,
+      });
+      if (!allowed) {
         setForbidden(true);
         setLoadingPost(false);
         return;
@@ -60,7 +70,7 @@ export default function EditPostPage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user, id, router, isAdmin]);
+  }, [authLoading, user, id, router]);
 
   async function handleSubmit(e) {
     e.preventDefault();

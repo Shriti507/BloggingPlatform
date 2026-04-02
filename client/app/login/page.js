@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function LoginPage() {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, setMockRole, mockRole } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,13 +28,26 @@ export default function LoginPage() {
     router.refresh();
   }
 
+  const handleSimulate = (role) => {
+    setMockRole(role);
+    router.push("/");
+  };
+
   if (isLoggedIn) {
     return (
       <div className="mx-auto max-w-md flex-1 px-4 py-20 text-center">
-        <p className="text-neutral-600">You&apos;re already signed in.</p>
-        <Link href="/" className="mt-4 inline-block text-sm font-medium text-neutral-900 underline">
-          Back home
-        </Link>
+        <p className="text-neutral-600">You&apos;re already signed in as <span className="font-bold">{mockRole || "default"}</span>.</p>
+        <div className="mt-6 flex flex-col gap-3">
+          <Link href="/" className="inline-block text-sm font-medium text-neutral-900 underline">
+            Back home
+          </Link>
+          <button
+            onClick={() => setMockRole(null)}
+            className="text-xs text-neutral-500 hover:text-neutral-900"
+          >
+            Clear role override
+          </button>
+        </div>
       </div>
     );
   }
@@ -45,8 +58,7 @@ export default function LoginPage() {
         Welcome back
       </h1>
       <p className="mt-2 text-sm text-neutral-500">
-        Sign in with your Explorer account. New users default to the reader role; ask an admin to
-        promote you to author.
+        Sign in to your account or use the simulation mode below to test different roles.
       </p>
 
       {error && (
@@ -94,6 +106,23 @@ export default function LoginPage() {
           {submitting ? "Signing in…" : "Sign in"}
         </button>
       </form>
+
+      <div className="mt-10 border-t border-neutral-100 pt-8">
+        <h2 className="text-center text-xs font-bold uppercase tracking-widest text-neutral-400">
+          Simulation Mode
+        </h2>
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          {["viewer", "author", "admin"].map((r) => (
+            <button
+              key={r}
+              onClick={() => handleSimulate(r)}
+              className="rounded-full border border-neutral-200 bg-white px-4 py-1.5 text-xs font-medium text-neutral-600 transition hover:border-neutral-900 hover:text-neutral-900"
+            >
+              Log in as {r.charAt(0).toUpperCase() + r.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <p className="mt-8 text-center text-sm text-neutral-600">
         No account?{" "}

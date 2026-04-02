@@ -1,3 +1,4 @@
+import { canCreatePosts } from "@/lib/auth/roleChecks";
 import { createClient } from "@/lib/supabase/server";
 import { generatePostSummary } from "@/services/aiSummaryService";
 import { NextResponse } from "next/server";
@@ -24,7 +25,7 @@ export async function POST(request) {
       return NextResponse.json({ error: "Profile not found" }, { status: 403 });
     }
 
-    if (profile.role !== "author" && profile.role !== "admin") {
+    if (!canCreatePosts(profile.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

@@ -1,7 +1,7 @@
 "use client";
 
+import { canCreatePosts } from "@/lib/auth/roleChecks";
 import { createClient } from "@/lib/supabase/client";
-import { ensurePublicUserRow } from "@/services/profileSyncService";
 import { fetchUserProfile } from "@/services/userService";
 import { signOut as authSignOut } from "@/services/authService";
 import {
@@ -19,6 +19,22 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [mockRole, setMockRole] = useState(null);
+
+  // Sync mockRole from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("explorer_mock_role");
+    if (saved) setMockRole(saved);
+  }, []);
+
+  const updateMockRole = useCallback((role) => {
+    setMockRole(role);
+    if (role) {
+      localStorage.setItem("explorer_mock_role", role);
+    } else {
+      localStorage.removeItem("explorer_mock_role");
+    }
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -26,30 +42,36 @@ export function AuthProvider({ children }) {
 
     async function applySession(s) {
       setSession(s);
+
       if (!s?.user) {
         setUser(null);
         setLoading(false);
         return;
       }
+
       setLoading(true);
-      const { error: ensureErr } = await ensurePublicUserRow(s.user);
-      if (ensureErr) console.error("ensurePublicUserRow:", ensureErr);
+
+      
       const { profile, error: profErr } = await fetchUserProfile(
         supabase,
         s.user.id,
         s.user.user_metadata
       );
+
       if (profErr) console.error("fetchUserProfile:", profErr);
+
       if (!cancelled) {
         setUser(profile);
         setLoading(false);
       }
     }
 
+    // Initial session
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       if (!cancelled) applySession(s);
     });
 
+    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
@@ -67,21 +89,26 @@ export function AuthProvider({ children }) {
   const refreshUser = useCallback(async () => {
     const supabase = createClient();
     setLoading(true);
+
     const {
       data: { session: s },
     } = await supabase.auth.getSession();
+
     setSession(s);
+
     if (!s?.user) {
       setUser(null);
       setLoading(false);
       return;
     }
-    await ensurePublicUserRow(s.user);
+
+    
     const { profile } = await fetchUserProfile(
       supabase,
       s.user.id,
       s.user.user_metadata
     );
+
     setUser(profile);
     setLoading(false);
   }, []);
@@ -92,26 +119,30 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
-  const value = useMemo(
-    () => ({
+  const value = useMemo(() => {
+    const activeUser = user ? { ...user, role: mockRole || user.role } : null;
+    const role = activeUser?.role || "viewer";
+
+    return {
       session,
-      user,
+      user: activeUser,
       loading,
       refreshUser,
       logout,
       isLoggedIn: Boolean(session?.user),
-      canWrite: Boolean(
-        user && (user.role === "author" || user.role === "admin")
-      ),
-      isAdmin: user?.role === "admin",
-      isAuthor: user?.role === "author",
-      isViewer: user?.role === "viewer",
-    }),
-    [session, user, loading, refreshUser, logout]
-  );
+      canWrite: canCreatePosts(role),
+      isAdmin: role === "admin",
+      isAuthor: role === "author",
+      isViewer: role === "viewer",
+      mockRole,
+      setMockRole: updateMockRole,
+    };
+  }, [session, user, loading, refreshUser, logout, mockRole, updateMockRole]);
 
   return (
-    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

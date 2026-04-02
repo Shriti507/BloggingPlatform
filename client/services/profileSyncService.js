@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { normalizeRole } from "@/lib/auth/roleChecks";
 
 /**
  * Ensures `public.users` has a row (e.g. email-confirmation signup before insert ran).
@@ -7,19 +8,16 @@ import { createClient } from "@/lib/supabase/client";
  */
 export async function ensurePublicUserRow(authUser) {
   const supabase = createClient();
-  const { data: existing, error: selErr } = await supabase
-    .from("users")
-    .select("id")
-    .eq("id", authUser.id)
-    .maybeSingle();
-
-  if (selErr) return { error: selErr };
-  if (existing) return { error: null };
-
-  const { error } = await supabase.from("users").insert({
+  
+  const { error } = await supabase.from("users").upsert({
     id: authUser.id,
     email: authUser.email ?? "",
-    role: "viewer",
+    name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || "New User",
+    role: normalizeRole(authUser.user_metadata?.role),
+    updated_at: new Date().toISOString(),
+  }, { 
+    onConflict: 'id'
   });
+
   return { error };
 }

@@ -1,3 +1,4 @@
+import { isAdminRole } from "@/lib/auth/roleChecks";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -24,7 +25,7 @@ export async function GET() {
       .select("id, title, created_at, updated_at, author_id")
       .order("updated_at", { ascending: false });
 
-    if (profile?.role !== "admin") {
+    if (!isAdminRole(profile?.role)) {
       query = query.eq("author_id", user.id);
     }
 

@@ -2,9 +2,8 @@ import { isAdminRole } from "@/lib/auth/roleChecks";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
-export async function DELETE(_request, { params }) {
+export async function GET() {
   try {
-    const { id } = await params;
     const supabase = await createClient();
     const {
       data: { user },
@@ -25,13 +24,26 @@ export async function DELETE(_request, { params }) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { error: delError } = await supabase.from("comments").delete().eq("id", id);
+    // Get counts
+    const { count: userCount } = await supabase
+      .from("users")
+      .select("*", { count: "exact", head: true });
 
-    if (delError) {
-      return NextResponse.json({ error: delError.message }, { status: 400 });
-    }
+    const { count: postCount } = await supabase
+      .from("posts")
+      .select("*", { count: "exact", head: true });
 
-    return NextResponse.json({ ok: true });
+    const { count: commentCount } = await supabase
+      .from("comments")
+      .select("*", { count: "exact", head: true });
+
+    return NextResponse.json({
+      stats: [
+        { label: "Total Posts", value: postCount ?? 0, color: "text-blue-600" },
+        { label: "Active Users", value: userCount ?? 0, color: "text-emerald-600" },
+        { label: "Total Comments", value: commentCount ?? 0, color: "text-amber-600" },
+      ],
+    });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
