@@ -133,7 +133,7 @@ export default function Navbar() {
                     {user?.role === "admin" && (
                       <Link
                         href="/admin"
-                        className="block px-4 py-2 text-sm font-medium text-indigo-600 transition hover:bg-neutral-50"
+                        className="block px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-neutral-50"
                         onClick={() => setProfileOpen(false)}
                       >
                         Admin Dashboard
