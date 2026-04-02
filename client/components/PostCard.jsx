@@ -15,6 +15,7 @@ export default function PostCard({ post }) {
           src={imageUrl}
           alt=""
           fill
+          unoptimized
           className="object-cover transition duration-300 group-hover:scale-[1.02]"
           sizes="(max-width: 640px) 100vw, 224px"
         />

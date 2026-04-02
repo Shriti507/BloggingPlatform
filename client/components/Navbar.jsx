@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAuth } from "./AuthProvider";
+import { useAuth } from "@/context/AuthProvider";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -18,7 +18,7 @@ function cn(...parts) {
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { user, logout, isLoggedIn, canWrite } = useAuth();
+  const { user, logout, isLoggedIn, canWrite, loading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
@@ -70,7 +70,12 @@ export default function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          {!isLoggedIn ? (
+          {loading ? (
+            <div
+              className="h-9 w-24 animate-pulse rounded-full bg-neutral-200/80"
+              aria-hidden
+            />
+          ) : !isLoggedIn ? (
             <Link
               href="/login"
               className="rounded-full border border-neutral-900 bg-neutral-900 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-neutral-800"
@@ -179,7 +184,9 @@ export default function Navbar() {
               </li>
             ))}
             <li className="border-t border-neutral-200 pt-3">
-              {!isLoggedIn ? (
+              {loading ? (
+                <div className="h-10 animate-pulse rounded-full bg-neutral-200/80" />
+              ) : !isLoggedIn ? (
                 <Link
                   href="/login"
                   className="block rounded-full bg-neutral-900 py-2 text-center text-sm font-medium text-white"

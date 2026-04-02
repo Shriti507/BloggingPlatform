@@ -1,28 +1,58 @@
 import CommentSection from "@/components/CommentSection";
-import { getPostById, MOCK_POSTS } from "@/lib/mockData";
+import { createClient } from "@/lib/supabase/server";
+import { fetchCommentsForPost } from "@/services/commentService";
+import { fetchPostById } from "@/services/postService";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export function generateStaticParams() {
-  return MOCK_POSTS.map((p) => ({ id: p.id }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function PostPage({ params }) {
   const { id } = await params;
-  const post = getPostById(id);
-  if (!post) notFound();
+  const { post, error } = await fetchPostById(id);
+  if (error || !post) notFound();
 
-  const paragraphs = post.content.split("\n\n").filter(Boolean);
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let isAdmin = false;
+  let canEdit = false;
+  if (user) {
+    const { data: prof } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    isAdmin = prof?.role === "admin";
+    canEdit = isAdmin || post.authorId === user.id;
+  }
+
+  const { comments: initialComments, error: commentsError } =
+    await fetchCommentsForPost(id);
+
+  const paragraphs = post.body.split("\n\n").filter(Boolean);
 
   return (
     <article className="mx-auto max-w-3xl flex-1 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
-      <Link
-        href="/"
-        className="text-sm font-medium text-neutral-500 transition hover:text-neutral-900"
-      >
-        ← Home
-      </Link>
+      <div className="flex flex-wrap items-center gap-3">
+        <Link
+          href="/"
+          className="text-sm font-medium text-neutral-500 transition hover:text-neutral-900"
+        >
+          ← Home
+        </Link>
+        {canEdit && (
+          <Link
+            href={`/post/${id}/edit`}
+            className="text-sm font-medium text-neutral-500 transition hover:text-neutral-900"
+          >
+            Edit
+          </Link>
+        )}
+      </div>
 
       <header className="mt-6">
         <h1 className="font-serif text-3xl font-semibold leading-tight text-neutral-900 sm:text-4xl">
@@ -50,6 +80,7 @@ export default async function PostPage({ params }) {
           src={post.imageUrl}
           alt=""
           fill
+          unoptimized
           className="object-cover"
           priority
           sizes="(max-width: 768px) 100vw, 768px"
@@ -64,7 +95,13 @@ export default async function PostPage({ params }) {
         ))}
       </div>
 
-      <CommentSection postId={post.id} />
+      <CommentSection
+        postId={id}
+        initialComments={initialComments}
+        isLoggedIn={Boolean(user)}
+        isAdmin={isAdmin}
+        loadError={commentsError}
+      />
     </article>
   );
 }

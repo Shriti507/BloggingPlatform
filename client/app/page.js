@@ -1,8 +1,20 @@
-import HomePostList from "@/components/HomePostList";
-import { MOCK_POSTS } from "@/lib/mockData";
+import PostListSection from "@/components/PostListSection";
+import { fetchPostsPaginated } from "@/services/postService";
 import Link from "next/link";
 
-export default function HomePage() {
+const PAGE_SIZE = 6;
+
+export default async function HomePage({ searchParams }) {
+  const sp = await searchParams;
+  const q = typeof sp.q === "string" ? sp.q : "";
+  const page = Math.max(1, parseInt(String(sp.page || "1"), 10) || 1);
+
+  const { posts, total, error } = await fetchPostsPaginated({
+    q,
+    page,
+    pageSize: PAGE_SIZE,
+  });
+
   return (
     <div className="flex-1">
       <section className="border-b border-neutral-200 bg-gradient-to-b from-white to-[var(--surface-muted)]">
@@ -26,7 +38,7 @@ export default function HomePage() {
         <label htmlFor="home-search" className="sr-only">
           Search stories
         </label>
-        <div className="relative">
+        <form action="/" method="get" className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
               <path
@@ -39,18 +51,26 @@ export default function HomePage() {
           </span>
           <input
             id="home-search"
+            name="q"
             type="search"
-            placeholder="Search stories (UI only)"
+            defaultValue={q}
+            placeholder="Search by title or content"
             className="w-full rounded-full border border-neutral-200 bg-white py-3 pl-12 pr-5 text-sm outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400"
-            readOnly
           />
-        </div>
+        </form>
 
         <h2 className="mt-14 font-serif text-2xl font-semibold text-neutral-900">
           Latest
         </h2>
         <div className="mt-8">
-          <HomePostList posts={MOCK_POSTS} />
+          <PostListSection
+            posts={posts}
+            total={total}
+            page={page}
+            pageSize={PAGE_SIZE}
+            query={q}
+            error={error}
+          />
         </div>
       </div>
     </div>
