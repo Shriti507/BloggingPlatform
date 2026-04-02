@@ -1,33 +1,64 @@
 "use client";
 
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth } from "@/context/AuthProvider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function CreatePostPage() {
-  const { user, canWrite } = useAuth();
+  const { user, canWrite, loading: authLoading } = useAuth();
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [content, setContent] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
     if (user == null) {
       router.replace("/login");
     }
-  }, [user, router]);
+  }, [user, router, authLoading]);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setSubmitted(true);
+    setError("");
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          body: content,
+          image_url: imageUrl || null,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Could not publish");
+        setSubmitting(false);
+        return;
+      }
+      if (data.id) {
+        router.push(`/post/${data.id}`);
+        router.refresh();
+        return;
+      }
+      setError("Unexpected response");
+    } catch {
+      setError("Network error");
+    }
+    setSubmitting(false);
   }
 
-  if (user == null) {
+  if (authLoading || (user == null && !authLoading)) {
     return (
       <div className="mx-auto max-w-lg flex-1 px-4 py-20 text-center sm:px-6">
-        <p className="text-sm text-neutral-500">Redirecting to login…</p>
+        <p className="text-sm text-neutral-500">
+          {user == null && !authLoading ? "Redirecting to login…" : "Loading…"}
+        </p>
       </div>
     );
   }
@@ -39,14 +70,14 @@ export default function CreatePostPage() {
           Writing is for authors and admins
         </h1>
         <p className="mt-3 text-neutral-600">
-          You&apos;re signed in as a reader. Sign out and log in again with the Author or Admin
-          role to create posts (mock).
+          Your account has the reader role. Ask a project admin to set your role to{" "}
+          <code className="rounded bg-neutral-100 px-1">author</code> in Supabase.
         </p>
         <Link
-          href="/login"
+          href="/dashboard"
           className="mt-8 inline-flex rounded-full bg-neutral-900 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800"
         >
-          Switch account (login)
+          Back to profile
         </Link>
       </div>
     );
@@ -58,16 +89,13 @@ export default function CreatePostPage() {
         New story
       </h1>
       <p className="mt-2 text-sm text-neutral-500">
-        This form is UI-only; nothing is saved yet.
+        A short summary is generated once when you publish (if AI is configured).
       </p>
 
-      {submitted && (
-        <div
-          className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
-          role="status"
-        >
-          Thanks—your draft would be submitted when the backend is connected.
-        </div>
+      {error && (
+        <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          {error}
+        </p>
       )}
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-6">
@@ -114,9 +142,10 @@ export default function CreatePostPage() {
         </div>
         <button
           type="submit"
-          className="rounded-full bg-neutral-900 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800"
+          disabled={submitting}
+          className="rounded-full bg-neutral-900 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:opacity-60"
         >
-          Publish (mock)
+          {submitting ? "Publishing…" : "Publish"}
         </button>
       </form>
     </div>

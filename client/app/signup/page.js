@@ -1,25 +1,42 @@
 "use client";
 
-import { MOCK_ROLE_OPTIONS, useAuth } from "@/components/AuthProvider";
+import { useAuth } from "@/context/AuthProvider";
+import { signUpWithProfile } from "@/services/authService";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function SignupPage() {
-  const { login, isLoggedIn } = useAuth();
+  const { isLoggedIn } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("author");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [info, setInfo] = useState("");
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    login({
-      name: name.trim() || "New member",
-      role,
+    setError("");
+    setInfo("");
+    setSubmitting(true);
+    const { error: err, needsEmailConfirmation } = await signUpWithProfile({
+      email,
+      password,
+      fullName: name.trim() || undefined,
     });
+    setSubmitting(false);
+    if (err) {
+      setError(err.message || "Sign up failed");
+      return;
+    }
+    if (needsEmailConfirmation) {
+      setInfo("Check your email to confirm your account, then sign in.");
+      return;
+    }
     router.push("/");
+    router.refresh();
   }
 
   if (isLoggedIn) {
@@ -39,70 +56,71 @@ export default function SignupPage() {
         Join Explorer
       </h1>
       <p className="mt-2 text-sm text-neutral-500">
-        Mock signup sets local session only. Choose a role to preview the UI.
+        We&apos;ll create your profile with the reader role. An admin can grant author access later.
       </p>
+
+      {error && (
+        <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          {error}
+        </p>
+      )}
+      {info && (
+        <p className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+          {info}
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
         <div>
           <label htmlFor="signup-name" className="block text-sm font-medium text-neutral-700">
-            Name
+            Display name
           </label>
           <input
             id="signup-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            required
             className="mt-2 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400"
             placeholder="Your name"
           />
         </div>
         <div>
-          <span className="block text-sm font-medium text-neutral-700">Role (mock)</span>
-          <select
-            id="signup-role"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="mt-2 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400"
-          >
-            {MOCK_ROLE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
           <label htmlFor="signup-email" className="block text-sm font-medium text-neutral-700">
-            Email (optional, mock)
+            Email
           </label>
           <input
             id="signup-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
             className="mt-2 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400"
             placeholder="you@example.com"
           />
         </div>
         <div>
           <label htmlFor="signup-password" className="block text-sm font-medium text-neutral-700">
-            Password (mock)
+            Password
           </label>
           <input
             id="signup-password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+            autoComplete="new-password"
             className="mt-2 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400"
             placeholder="••••••••"
           />
         </div>
         <button
           type="submit"
-          className="w-full rounded-full bg-neutral-900 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800"
+          disabled={submitting}
+          className="w-full rounded-full bg-neutral-900 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:opacity-60"
         >
-          Create account
+          {submitting ? "Creating account…" : "Create account"}
         </button>
       </form>
 

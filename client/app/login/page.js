@@ -1,25 +1,31 @@
 "use client";
 
-import { MOCK_ROLE_OPTIONS, useAuth } from "@/components/AuthProvider";
+import { useAuth } from "@/context/AuthProvider";
+import { signInWithPassword } from "@/services/authService";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function LoginPage() {
-  const { login, isLoggedIn } = useAuth();
+  const { isLoggedIn } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("author");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    login({
-      name: name.trim() || "Member",
-      role,
-    });
+    setError("");
+    setSubmitting(true);
+    const { error: err } = await signInWithPassword({ email, password });
+    setSubmitting(false);
+    if (err) {
+      setError(err.message || "Sign in failed");
+      return;
+    }
     router.push("/");
+    router.refresh();
   }
 
   if (isLoggedIn) {
@@ -39,70 +45,53 @@ export default function LoginPage() {
         Welcome back
       </h1>
       <p className="mt-2 text-sm text-neutral-500">
-        Mock login: pick a role to simulate permissions. Password is not checked.
+        Sign in with your Explorer account. New users default to the reader role; ask an admin to
+        promote you to author.
       </p>
+
+      {error && (
+        <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          {error}
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
         <div>
-          <label htmlFor="login-name" className="block text-sm font-medium text-neutral-700">
-            Display name
-          </label>
-          <input
-            id="login-name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="mt-2 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400"
-            placeholder="Alex Writer"
-          />
-        </div>
-        <div>
-          <span className="block text-sm font-medium text-neutral-700">Role (mock)</span>
-          <select
-            id="login-role"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="mt-2 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400"
-          >
-            {MOCK_ROLE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
           <label htmlFor="login-email" className="block text-sm font-medium text-neutral-700">
-            Email (optional, mock)
+            Email
           </label>
           <input
             id="login-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
             className="mt-2 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400"
             placeholder="you@example.com"
           />
         </div>
         <div>
           <label htmlFor="login-password" className="block text-sm font-medium text-neutral-700">
-            Password (mock)
+            Password
           </label>
           <input
             id="login-password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
             className="mt-2 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400"
             placeholder="••••••••"
           />
         </div>
         <button
           type="submit"
-          className="w-full rounded-full bg-neutral-900 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800"
+          disabled={submitting}
+          className="w-full rounded-full bg-neutral-900 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:opacity-60"
         >
-          Sign in
+          {submitting ? "Signing in…" : "Sign in"}
         </button>
       </form>
 
