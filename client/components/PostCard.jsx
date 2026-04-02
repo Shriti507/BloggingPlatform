@@ -1,3 +1,5 @@
+"use client";
+
 import { useAuth } from "@/context/AuthProvider";
 import { canEditPost } from "@/lib/auth/roleChecks";
 import Image from "next/image";
@@ -39,7 +41,7 @@ export default function PostCard({ post }) {
             </Link>
             {canEdit && (
               <Link
-                href={`/edit/${id}`}
+                href={`/post/${id}/edit`}
                 className="shrink-0 rounded-md bg-neutral-50 px-2 py-1 text-xs font-medium text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900"
               >
                 Edit

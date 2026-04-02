@@ -25,6 +25,7 @@ export async function POST(request) {
       return NextResponse.json({ error: "Profile not found" }, { status: 403 });
     }
 
+    // STEP A: Validate user role (Only "author" and "admin" can create posts)
     if (!canCreatePosts(profile.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -38,7 +39,13 @@ export async function POST(request) {
 
     const title = String(body.title ?? "").trim();
     const postBody = String(body.body ?? "").trim();
-    const image_url = String(body.image_url ?? "").trim() || null;
+    
+    // Rigorous nullification to prevent literal `"null"` array injections or empty strings
+    let parsedImage = body.image_url === null ? null : String(body.image_url ?? "").trim();
+    if (parsedImage === "" || parsedImage === "null" || parsedImage === "undefined") {
+      parsedImage = null;
+    }
+    const image_url = parsedImage;
 
     if (!title || !postBody) {
       return NextResponse.json(
@@ -47,6 +54,20 @@ export async function POST(request) {
       );
     }
 
+    // STEP B & C: Call AI Summary Service Module & Receive summary response
+    let summary = "Summary not available";
+    try {
+      // Calling logic natively directly prevents local dev server connection deadlocks!
+      const generated = await generatePostSummary(postBody);
+      if (generated) {
+        summary = generated;
+      }
+    } catch (err) {
+      console.error("Internal AI fetch failed:", err);
+      // Fallback summary is retained
+    }
+
+    // STEP D: Store in database (Supabase) ONE-SHOT
     const { data: post, error: insertError } = await supabase
       .from("posts")
       .insert({
@@ -54,7 +75,7 @@ export async function POST(request) {
         body: postBody,
         image_url,
         author_id: user.id,
-        summary: null,
+        summary,  // <- IMPORTANT
       })
       .select("id")
       .single();
@@ -63,22 +84,52 @@ export async function POST(request) {
       return NextResponse.json({ error: insertError.message }, { status: 400 });
     }
 
-    if (process.env.GOOGLE_AI_API_KEY) {
-      try {
-        const summary = await generatePostSummary(postBody);
-        const { error: upErr } = await supabase
-          .from("posts")
-          .update({ summary })
-          .eq("id", post.id);
-        if (upErr) {
-          console.error("Failed to save summary:", upErr);
-        }
-      } catch (e) {
-        console.error("AI summary failed:", e);
-      }
+    // STEP E: Return response to frontend
+    return NextResponse.json({ id: post.id });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search") || searchParams.get("q") || "";
+    const page = parseInt(searchParams.get("page") || "1", 10) || 1;
+    const limit = parseInt(searchParams.get("limit") || "10", 10) || 10;
+
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const supabase = await createClient();
+    let query = supabase
+      .from("posts")
+      .select("id, title, summary, image_url, created_at, author_id, body", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (search) {
+      const escaped = search.replace(/[%_,\\"]/g, "");
+      const pattern = `%${escaped}%`;
+      query = query.or(`title.ilike.${pattern},body.ilike.${pattern}`);
     }
 
-    return NextResponse.json({ id: post.id });
+    const { data: posts, count, error } = await query;
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({
+      data: posts,
+      meta: {
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil((count || 0) / limit),
+      },
+    });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

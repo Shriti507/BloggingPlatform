@@ -13,7 +13,7 @@ export async function generatePostSummary(postBody) {
     throw new Error("GOOGLE_AI_API_KEY is not set");
   }
 
-  const modelId = process.env.GOOGLE_AI_MODEL || "gemini-2.0-flash";
+  const modelId = process.env.GOOGLE_AI_MODEL || "gemini-1.5-flash";
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: modelId });
 
