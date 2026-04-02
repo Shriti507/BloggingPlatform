@@ -13,6 +13,7 @@ export default function CreatePostPage() {
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -21,8 +22,42 @@ export default function CreatePostPage() {
     }
   }, [user, router, authLoading]);
 
+  async function handleImageUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    setError("");
+
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `public/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("images")
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage.from("images").getPublicUrl(filePath);
+      setImageUrl(data.publicUrl);
+    } catch (err) {
+      setError(err.message || "Failed to upload image. Ensure you have a public 'images' bucket in Supabase.");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
+    if (uploadingImage) return;
+    
     setError("");
     setSubmitting(true);
     try {
@@ -130,16 +165,23 @@ export default function CreatePostPage() {
         </div>
         <div>
           <label htmlFor="create-image" className="block text-sm font-medium text-neutral-700">
-            Cover image URL
+            Cover image
           </label>
-          <input
-            id="create-image"
-            type="url"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            className="mt-2 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400"
-            placeholder="https://..."
-          />
+          <div className="mt-2 flex items-center gap-4">
+            <input
+              id="create-image"
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="block w-full text-sm text-neutral-500 file:mr-4 file:rounded-full file:border-0 file:bg-neutral-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-neutral-700 hover:file:bg-neutral-200 transition"
+            />
+            {uploadingImage && <span className="text-xs font-semibold text-neutral-400">Uploading...</span>}
+          </div>
+          {imageUrl && (
+            <div className="mt-4 overflow-hidden rounded-lg border border-neutral-200">
+              <img src={imageUrl} alt="Uploaded preview" className="w-full object-cover max-h-48" />
+            </div>
+          )}
         </div>
         <div>
           <label htmlFor="create-content" className="block text-sm font-medium text-neutral-700">
