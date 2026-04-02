@@ -4,66 +4,53 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from "react";
 
-const STORAGE_KEY = "explorer-mock-user";
+/** @typedef {'viewer' | 'author' | 'admin'} MockRole */
 
 const AuthContext = createContext(null);
 
-function readStoredUser() {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed || !parsed.role) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
+/** Options for mock login/signup role `<select>`. */
+export const MOCK_ROLE_OPTIONS = [
+  { value: "viewer", label: "Reader (viewer)" },
+  { value: "author", label: "Author" },
+  { value: "admin", label: "Admin" },
+];
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [hydrated, setHydrated] = useState(false);
 
-  useEffect(() => {
-    setUser(readStoredUser());
-    setHydrated(true);
+  /** @param {{ name: string, role: MockRole }} payload */
+  const login = useCallback((payload) => {
+    const name = (payload.name || "Member").trim() || "Member";
+    const role = payload.role;
+    if (role !== "viewer" && role !== "author" && role !== "admin") return;
+    setUser({ name, role });
   }, []);
 
-  const login = useCallback((nextUser) => {
-    setUser(nextUser);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
-    }
-  }, []);
-
-  const logout = useCallback(() => {
-    setUser(null);
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(STORAGE_KEY);
-    }
-  }, []);
+  const logout = useCallback(() => setUser(null), []);
 
   const value = useMemo(
     () => ({
       user,
-      hydrated,
       login,
       logout,
-      isLoggedIn: Boolean(user),
-      role: user?.role ?? null,
-      canWrite: user?.role === "author" || user?.role === "admin",
+      isLoggedIn: user != null,
+      canWrite: Boolean(
+        user && (user.role === "author" || user.role === "admin")
+      ),
       isAdmin: user?.role === "admin",
+      isAuthor: user?.role === "author",
+      isViewer: user?.role === "viewer",
     }),
-    [user, hydrated, login, logout],
+    [user, login, logout]
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

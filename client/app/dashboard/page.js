@@ -1,30 +1,24 @@
 "use client";
 
+import { useAuth } from "@/components/AuthProvider";
+import { getPostById, MOCK_MY_POSTS } from "@/lib/mockData";
 import Link from "next/link";
 import { useState } from "react";
-import { useAuth } from "@/components/AuthProvider";
-import { MOCK_MY_POSTS } from "@/lib/mockData";
 
 export default function DashboardPage() {
-  const { user, isLoggedIn, hydrated, isAdmin } = useAuth();
-  const [banner, setBanner] = useState(null);
-
-  if (!hydrated) {
-    return (
-      <div className="mx-auto max-w-3xl flex-1 px-4 py-20">
-        <div className="h-8 w-48 animate-pulse rounded bg-neutral-200" />
-      </div>
-    );
-  }
+  const { user, isLoggedIn, isAdmin, canWrite } = useAuth();
+  const [editingId, setEditingId] = useState(null);
 
   if (!isLoggedIn) {
     return (
-      <div className="mx-auto max-w-lg flex-1 px-4 py-20 text-center">
-        <h1 className="font-serif text-2xl font-semibold text-neutral-900">Your workspace</h1>
-        <p className="mt-3 text-neutral-600">Sign in to view your posts and settings.</p>
+      <div className="mx-auto max-w-lg flex-1 px-4 py-20 text-center sm:px-6">
+        <h1 className="font-serif text-2xl font-semibold text-neutral-900">
+          Your dashboard
+        </h1>
+        <p className="mt-3 text-neutral-600">Sign in to see your stories and settings.</p>
         <Link
           href="/login"
-          className="mt-8 inline-flex rounded-full bg-[#1a8917] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#157d14]"
+          className="mt-8 inline-flex rounded-full bg-neutral-900 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800"
         >
           Sign in
         </Link>
@@ -33,105 +27,102 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl flex-1 px-4 py-10 sm:px-6 lg:px-8">
-      <div className="border-b border-neutral-200 pb-8">
-        <h1 className="font-serif text-3xl font-semibold text-neutral-900">Profile</h1>
-        <p className="mt-2 text-neutral-600">
-          <span className="font-medium text-neutral-800">{user?.displayName}</span>
-          <span className="mx-2 text-neutral-300">·</span>
-          {user?.email}
-          <span className="mx-2 text-neutral-300">·</span>
-          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-700">
-            {user?.role}
+    <div className="mx-auto max-w-3xl flex-1 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+      <h1 className="font-serif text-3xl font-semibold text-neutral-900">
+        Profile
+      </h1>
+      <p className="mt-2 text-sm text-neutral-500">
+        Signed in as <span className="font-medium text-neutral-800">{user.name}</span>
+        {user.role && (
+          <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+            {user.role}
           </span>
-        </p>
-      </div>
+        )}
+      </p>
 
       {isAdmin && (
-        <section className="mt-10 rounded-lg border border-amber-200/80 bg-amber-50/60 px-5 py-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-900/90">Admin</h2>
-          <p className="mt-2 text-sm text-amber-900/80">
-            Extra controls will live here (moderation, users, site settings). UI placeholder only.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="rounded-full border border-amber-800/30 bg-white px-4 py-2 text-xs font-medium text-amber-950 transition-colors hover:bg-amber-100/80"
-              onClick={() => setBanner("Review queue (mock)")}
-            >
-              Open review queue
-            </button>
-            <button
-              type="button"
-              className="rounded-full border border-amber-800/30 bg-white px-4 py-2 text-xs font-medium text-amber-950 transition-colors hover:bg-amber-100/80"
-              onClick={() => setBanner("Export reports (mock)")}
-            >
-              Export reports
-            </button>
-          </div>
+        <section className="mt-10 rounded-lg border border-amber-200 bg-amber-50/80 p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-900">
+            Admin
+          </h2>
+          <ul className="mt-3 space-y-2 text-sm text-amber-950/90">
+            <li>
+              <button
+                type="button"
+                className="text-left underline-offset-2 hover:underline"
+                onClick={() => alert("Moderation queue — UI placeholder")}
+              >
+                Open moderation queue (mock)
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                className="text-left underline-offset-2 hover:underline"
+                onClick={() => alert("Site settings — UI placeholder")}
+              >
+                Site settings (mock)
+              </button>
+            </li>
+          </ul>
         </section>
       )}
 
-      {banner && (
-        <p className="mt-4 rounded-md bg-neutral-100 px-4 py-2 text-sm text-neutral-700" role="status">
-          {banner}
-        </p>
+      {canWrite ? (
+        <section className="mt-10">
+          <h2 className="font-serif text-xl font-semibold text-neutral-900">Your posts</h2>
+          <p className="mt-1 text-sm text-neutral-500">Dummy data; edit is UI-only.</p>
+
+          <ul className="mt-6 divide-y divide-neutral-200 rounded-lg border border-neutral-200 bg-white">
+            {MOCK_MY_POSTS.map((row) => (
+              <li key={row.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  {getPostById(row.id) ? (
+                    <Link
+                      href={`/post/${row.id}`}
+                      className="font-medium text-neutral-900 transition hover:text-neutral-600"
+                    >
+                      {row.title}
+                    </Link>
+                  ) : (
+                    <span className="font-medium text-neutral-900">{row.title}</span>
+                  )}
+                  <p className="mt-1 text-xs text-neutral-500">
+                    {row.status} · Updated {row.updatedAt}
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  {editingId === row.id ? (
+                    <button
+                      type="button"
+                      className="rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 transition hover:bg-neutral-50"
+                      onClick={() => setEditingId(null)}
+                    >
+                      Done
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 transition hover:bg-neutral-50"
+                      onClick={() => setEditingId(row.id)}
+                    >
+                      Edit (UI)
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : (
+        <section className="mt-10 rounded-lg border border-neutral-200 bg-white p-6">
+          <h2 className="font-serif text-lg font-semibold text-neutral-900">Reader account</h2>
+          <p className="mt-2 text-sm text-neutral-600 leading-relaxed">
+            You can read stories and join discussions. To manage drafts and use Edit (UI), sign in
+            with the Author or Admin role on the login page.
+          </p>
+        </section>
       )}
-
-      <section className="mt-10">
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 className="font-serif text-xl font-semibold text-neutral-900">Your stories</h2>
-          <Link href="/create" className="text-sm font-medium text-[#1a8917] hover:underline">
-            New story
-          </Link>
-        </div>
-        <p className="mt-1 text-sm text-neutral-500">Dummy list for layout—persistence comes later.</p>
-
-        <ul className="mt-6 divide-y divide-neutral-200 rounded-lg border border-neutral-200 bg-white">
-          {MOCK_MY_POSTS.map((row) => (
-            <li key={row.id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <Link
-                  href={row.status === "Draft" ? "#" : `/post/${row.id}`}
-                  className="font-medium text-neutral-900 hover:text-[#1a8917]"
-                >
-                  {row.title}
-                </Link>
-                <p className="mt-1 text-xs text-neutral-500">
-                  Updated {row.updatedAt}
-                  <span className="mx-2">·</span>
-                  <span
-                    className={
-                      row.status === "Published"
-                        ? "text-emerald-700"
-                        : "text-amber-700"
-                    }
-                  >
-                    {row.status}
-                  </span>
-                </p>
-              </div>
-              <div className="flex shrink-0 gap-2">
-                <button
-                  type="button"
-                  className="rounded-full border border-neutral-300 px-4 py-1.5 text-sm text-neutral-800 transition-colors hover:border-neutral-900 hover:bg-neutral-900 hover:text-white"
-                  onClick={() => setBanner(`Edit “${row.title}” (mock)`)}
-                >
-                  Edit
-                </button>
-                {row.status === "Published" ? (
-                  <Link
-                    href={`/post/${row.id}`}
-                    className="rounded-full border border-transparent px-4 py-1.5 text-sm font-medium text-[#1a8917] hover:underline"
-                  >
-                    View
-                  </Link>
-                ) : null}
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
     </div>
   );
 }

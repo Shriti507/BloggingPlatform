@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Source_Serif_4 } from "next/font/google";
-import Navbar from "@/components/Navbar";
+import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/AuthProvider";
+import Navbar from "@/components/Navbar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -9,14 +9,17 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-const sourceSerif = Source_Serif_4({
-  variable: "--font-source-serif",
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Explorer — Ideas worth exploring",
-  description: "A Medium-like reading and writing experience.",
+  title: {
+    default: "Explorer",
+    template: "%s · Explorer",
+  },
+  description: "A calm place to read and write long-form stories.",
 };
 
 export default function RootLayout({
@@ -27,9 +30,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${sourceSerif.variable} h-full scroll-smooth antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-neutral-900">
+      <body className="min-h-full flex flex-col bg-[var(--surface)] text-neutral-900">
         <AuthProvider>
           <Navbar />
           <main className="flex flex-1 flex-col">{children}</main>
