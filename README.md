@@ -113,3 +113,6 @@ Once logged in, click "Start Writing" in the navigation bar. You can upload a co
 Access the Admin Dashboard to see platform-wide statistics. Admins can moderate discussions and manage any post on the platform to maintain community standards.
 
 ---
+##  Demo Video
+
+https://drive.google.com/file/d/1rQqV6x7DhCkdE8JhTBWmub-mZbrryTVl/view?usp=sharing
