@@ -1,6 +1,6 @@
 import Link from "next/link";
-// import PostListSection from "@/components/PostListSection";
-// import { fetchPostsPaginated } from "@/services/postService";
+import PostListSection from "@/components/PostListSection";
+import { fetchPostsPaginated } from "@/services/postService";
 
 const PAGE_SIZE = 6;
 
@@ -10,11 +10,11 @@ export default async function Page({ searchParams }) {
   const q = typeof sp.q === "string" ? sp.q : "";
   const page = Math.max(1, parseInt(String(sp.page || "1"), 10) || 1);
 
-  // ⚠️ TEMP SAFE DATA (to confirm UI works)
-  const posts = [
-    { id: 1, title: "First Blog", excerpt: "This is a test post" },
-    { id: 2, title: "Second Blog", excerpt: "Another sample post" },
-  ];
+  const { posts, total, error } = await fetchPostsPaginated({
+    q,
+    page,
+    pageSize: PAGE_SIZE,
+  });
 
   return (
     <div className="flex-1">
@@ -44,14 +44,15 @@ export default async function Page({ searchParams }) {
 
         <h2 className="mt-10 text-2xl font-semibold">Latest</h2>
 
-        {/* ✅ TEMP RENDER */}
-        <div className="mt-6 space-y-4">
-          {posts.map((post) => (
-            <div key={post.id} className="border p-4 rounded-lg">
-              <h3 className="font-semibold">{post.title}</h3>
-              <p className="text-sm text-neutral-600">{post.excerpt}</p>
-            </div>
-          ))}
+        <div className="mt-6">
+          <PostListSection
+            posts={posts}
+            total={total}
+            page={page}
+            pageSize={PAGE_SIZE}
+            query={q}
+            error={error}
+          />
         </div>
       </div>
     </div>
