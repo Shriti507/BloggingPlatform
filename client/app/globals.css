@@ -6,3 +6,67 @@
   --surface: #fafafa;
   --surface-muted: #f4f4f5;
 }
+
+/* ── Base typography resets ── */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  }
+
+  /* Smooth scroll for anchor links */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Better focus styles */
+  :focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Selection color */
+  ::selection {
+    background-color: #e0e7ff;
+    color: #1e1b4b;
+  }
+}
+
+/* ── Transition duration utility ── */
+@layer utilities {
+  .duration-400 {
+    transition-duration: 400ms;
+  }
+}
+
+/* ── Blog prose styles (used by BlogPostContent) ── */
+.blog-prose {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: #404040;
+}
+
+@media (min-width: 640px) {
+  .blog-prose {
+    font-size: 1.0625rem;
+  }
+}
+
+.blog-prose img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Smooth scrollbar */
+@media (hover: hover) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #d4d4d4 transparent;
+  }
+}
